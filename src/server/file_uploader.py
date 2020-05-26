@@ -6,10 +6,10 @@ from flask import flash, current_app
 import pandas as pd
 
 SRC_TYPES_BY_HEADER = {
-    'Account Name':          'salesforcecontacts',
-    'Last.name..First.name': 'volgistics',
-    'Animal.ID':             'petpoint',
-    'Recurring.donor':       'salesforcedonations'
+    'Contact ID':          'salesforcecontacts',
+    'Last name  First name': 'volgistics',
+    'Animal ID #':             'petpoint',
+    'Opportunity ID':       'salesforcedonations'
 }
 
 SUCCESS_MSG = 'Uploaded Successfully!'
@@ -43,6 +43,7 @@ def validate_and_arrange_upload(file, destination_path):
 
 def determine_upload_type(file):
     df = pd.read_csv(file.stream)
+    #TODO: validate csv by looking for index column and all tracked columns
     for key in SRC_TYPES_BY_HEADER:
         if key in df.columns:
             column_header = key
