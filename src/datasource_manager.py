@@ -16,18 +16,18 @@ DATASOURCE_MAPPING = {
         'id': 'contact_id',
         'csv_names': CSV_HEADERS['salesforcecontacts'],
         'tracked_columns': list(map(__clean_csv_headers, CSV_HEADERS['salesforcecontacts'])),
-        'identifying_criteria': []
+        'identifying_criteria': {'email': 'email', 'name': ['first_name', 'last_name']}
     },
     'volgistics': {
         'id': 'number',
         'csv_names': CSV_HEADERS['volgistics'],
         'tracked_columns': list(map(__clean_csv_headers, CSV_HEADERS['volgistics'])),
-        'identifying_criteria': []
+        'identifying_criteria': {'email': 'email', 'name': ['first_name', 'last_name']}
     },
     'petpoint': {
         'id': 'animal_num',
         'csv_names': CSV_HEADERS['petpoint'],
         'tracked_columns': list(map(__clean_csv_headers, CSV_HEADERS['petpoint'])),
-        'identifying_criteria': []
+        'identifying_criteria': {'email': 'out_email', 'name': ['outcome_person_name']}
     }
 }
