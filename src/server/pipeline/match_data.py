@@ -51,6 +51,7 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
     rows = items_to_update.to_dict(orient="records")
     row_print_freq = 1000 
 
+    warn_counter = 0;
     for row_num, row in enumerate(rows):
         if row_num % row_print_freq == 0:
             current_app.logger.info("- Matching rows {}-{} of {}".format(
@@ -79,12 +80,15 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
                     row_matches = row_matches.append(pdp_contacts[(pdp_contacts["source_type"] == column) & (pdp_contacts["source_id"] == value)])
                     
         
+        warn = False
         if row_matches.empty:  # new record, no matching rows
             max_matching_group += 1
             row_group = max_matching_group
         else:  # existing match(es)
             row_group = row_matches["matching_id"].values[0]
             if not all(row_matches["matching_id"] == row_group):
+                warn = True
+                warn_counter += 1
                 current_app.logger.warning(
                     "Source {} with ID {} is matching multiple groups in pdp_contacts ({})"
                         .format(row["source_type"], row["source_id"], str(row_matches["matching_id"].drop_duplicates()))
@@ -93,7 +97,10 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
         # Updating local pdp_contacts dataframe instead of a roundtrip to postgres within the loop.
         # Indexing by iloc and vector of rows to keep the pd.DataFrame class and avoid implicit
         # casting to a single-typed pd.Series.
+        if warn:
+            pdp_contacts.to_csv("/app/static/logs/warnings_{}.csv".format(warn_counter))
         pdp_contacts = pdp_contacts.append(items_to_update.iloc[[row_num], :], ignore_index=True)
+        
 
     # Write new data and matching ID's to postgres in bulk, instead of line-by-line
     current_app.logger.info("- Writing data to pdp_contacts table")
