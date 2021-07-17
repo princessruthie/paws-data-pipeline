@@ -51,13 +51,10 @@ def start(connection, pdp_contacts_df, file_path_list):
                 json_rows = pd.concat([json_rows, source_json])
 
         else:  # it is a child table
-            if table_name in sqlalchemy.inspect(connection).get_table_names():
-                
-                # Only retain new/updated records in secondary tables (shifts, donations, etc.)
-                current_app.logger.info('   - Deduplicating old records')
-                old_data = pd.read_sql_table(table_name, connection)
-                df = old_data.append(df, ignore_index=True).drop_duplicates()
-                
+            # Only retain new/updated records in secondary tables (shifts, donations, etc.)
+            current_app.logger.info('   - Deduplicating old records')
+            old_data = pd.read_sql_table(table_name, connection)
+            df = old_data.append(df, ignore_index=True).drop_duplicates()
             if table_name == 'salesforcedonations':
                 df.to_sql(table_name, connection, index=False, if_exists='replace', dtype={
                     'close_date': sqlalchemy.Date(),
