@@ -49,7 +49,7 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
     items_to_update["first_name_normalized"] = items_to_update["first_name"].apply(normalize_before_match)
     items_to_update["last_name_normalized"] = items_to_update["last_name"].apply(normalize_before_match)
     items_to_update["email_normalized"] = items_to_update["email"].apply(normalize_before_match)
-
+ 
     pdp_contacts["first_name_normalized"] = pdp_contacts["first_name"].apply(normalize_before_match)
     pdp_contacts["last_name_normalized"] = pdp_contacts["last_name"].apply(normalize_before_match)
     pdp_contacts["email_normalized"] = pdp_contacts["email"].apply(normalize_before_match)
@@ -102,14 +102,9 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
                 row_matches = row_matches.assign(matching_id=row_group)
                 pdp_contacts = pdp_contacts.append(row_matches, ignore_index=True)
                 row_matches.drop(columns=["_id",  "first_name_normalized", "last_name_normalized", "email_normalized"], inplace=True)
-                
-                #write back old data not contained in the items_to_update dataframe
-                row_matches = row_matches[~row_matches['source_id'].isin(items_to_update['source_id'].tolist())]
-                row_matches.to_sql('pdp_contacts', connection, index=False, if_exists='append')
-                current_app.logger.warning(
-                    "Source {} with ID {} is matching multiple groups in pdp_contacts ({})"
-                        .format(row["source_type"], row["source_id"], str(row_matches["matching_id"].drop_duplicates()))
-                )
+                merged = pd.merge(row_matches, items_to_update, on=['source_id','source_type'], how='left', indicator='Exist')
+                #write back id change rows that are not part of the fresh data
+                merged[merged["Exist"] == "left_only"].drop("Exist", axis=1).to_sql('pdp_contacts', connection, index=False, if_exists='append')
         items_to_update.loc[row_num, "matching_id"] = row_group
         # Updating local pdp_contacts dataframe instead of a roundtrip to postgres within the loop.
         # Indexing by iloc and vector of rows to keep the pd.DataFrame class and avoid implicit
@@ -119,8 +114,9 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
     # Make Id changes
     for key in id_changes:
         items_to_update.loc[items_to_update["matching_id"] == key, ["matching_id"]] = id_changes[key]
-    # Write new data and matching ID's to postgres in bulk, instead of line-by-line
+    #
     delete_from_db(connection, id_changes)
+    # Write new data and matching ID's to postgres in bulk, instead of line-by-line
     current_app.logger.info("- Writing data to pdp_contacts table")
     items_to_update = items_to_update.drop(
         columns=["first_name_normalized", "last_name_normalized", "email_normalized"])

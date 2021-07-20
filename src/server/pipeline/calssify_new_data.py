@@ -45,6 +45,8 @@ def start(pdp_contacts_df, normalized_data):
     # Process updated results
     incoming_reused_rows = filter_rows_by_ids(normalized_data, reused_ids)
     existing_reused_rows = filter_rows_by_ids(pdp_contacts_df, reused_ids)
+    incoming_reused_rows = incoming_reused_rows.astype('object')
+    existing_reused_rows = existing_reused_rows.astype('object')
     fresh_rows, unchanged_rows, old_version_rows = venn_diagram_join(incoming_reused_rows, existing_reused_rows)
     # We don't need to consider unchanged rows, since we've already recorded that data and matching.
     result["updated"] = fresh_rows
