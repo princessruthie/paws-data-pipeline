@@ -17,7 +17,7 @@ def normalize_before_match(value):
 
 def delete_from_db(connection, id_list):
     for id in id_list:
-        sql = text("delete from pdp_contacts where matching_id = :id")
+        sql = text("delete from pdp_contacts where matching_id = :id and archived_date is not null")
         connection.execute(sql, id=id)
 
 

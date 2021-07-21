@@ -49,10 +49,10 @@ def start(pdp_contacts_df, normalized_data):
     existing_reused_rows = existing_reused_rows.astype('object')
     fresh_rows, unchanged_rows, old_version_rows = venn_diagram_join(incoming_reused_rows, existing_reused_rows)
     # We don't need to consider unchanged rows, since we've already recorded that data and matching.
-    result["updated"] = fresh_rows
-    result["old"] = pd.concat([filter_rows_by_ids(pdp_contacts_df, old_ids), unchanged_rows])
+    result["updated"] = fresh_rows.astype('object')
+    result["old"] = pd.concat([filter_rows_by_ids(pdp_contacts_df, old_ids), unchanged_rows]).astype('object')
     # could also consider adding old_version_rows to result["old"]
-    result["new"] = filter_rows_by_ids(normalized_data, new_ids)
+    result["new"] = filter_rows_by_ids(normalized_data, new_ids).astype('object')
 
     current_app.logger.info(
         " - Classified {} new rows and {} updated rows in the normalized data"
