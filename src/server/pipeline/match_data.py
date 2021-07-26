@@ -33,6 +33,7 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
 
     current_app.logger.info("***** Running execute job ID " + job_id + " *****")
     items_to_update = pd.concat([added_or_updated_rows["new"], added_or_updated_rows["updated"]], ignore_index=True)
+    
     pdp_contacts = pd.read_sql_table('pdp_contacts', connection)
 
     if pdp_contacts["matching_id"].dropna().size == 0:
@@ -102,9 +103,10 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
                 row_matches = row_matches.assign(matching_id=row_group)
                 pdp_contacts = pdp_contacts.append(row_matches, ignore_index=True)
                 row_matches.drop(columns=["_id",  "first_name_normalized", "last_name_normalized", "email_normalized"], inplace=True)
-                merged = pd.merge(row_matches, items_to_update, on=['source_id','source_type'], how='left', indicator='Exist')
+                merged = pd.merge(row_matches, items_to_update, on=['source_id','source_type'], how='left', indicator='Exist', suffixes=('', '_y'))
                 #write back id change rows that are not part of the fresh data
-                merged[merged["Exist"] == "left_only"].drop("Exist", axis=1).to_sql('pdp_contacts', connection, index=False, if_exists='append')
+                merged = merged[merged["Exist"] == "left_only"].drop(columns=["Exist", "first_name_normalized", "last_name_normalized", "email_normalized"], axis=1)
+                merged.drop(merged.filter(regex='_y$').columns.tolist(),axis=1).to_sql('pdp_contacts', connection, index=False, if_exists='append')
         items_to_update.loc[row_num, "matching_id"] = row_group
         # Updating local pdp_contacts dataframe instead of a roundtrip to postgres within the loop.
         # Indexing by iloc and vector of rows to keep the pd.DataFrame class and avoid implicit
@@ -112,8 +114,8 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
         pdp_contacts = pdp_contacts.append(items_to_update.iloc[[row_num], :], ignore_index=True)
 
     # Make Id changes
-    for key in id_changes:
-        items_to_update.loc[items_to_update["matching_id"] == key, ["matching_id"]] = id_changes[key]
+    for old_id in id_changes:
+        items_to_update.loc[items_to_update["matching_id"] == old_id, ["matching_id"]] = id_changes[old_id]
     #
     delete_from_db(connection, id_changes)
     # Write new data and matching ID's to postgres in bulk, instead of line-by-line
