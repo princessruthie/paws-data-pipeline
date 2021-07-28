@@ -105,9 +105,31 @@ class Search360 extends Component {
         const {classes} = this.props;
         const tableRowColors = [classes.tableRowEven, classes.tableRowOdd]
 
-        let participantListGrouped = _.map(this.state.participantList, this.namesToLowerCase)
-        participantListGrouped = _.groupBy(participantListGrouped, "matching_id");
+        const COLORS = ["red", "blue", "yellow", "green"];
+        const LABELS = [
+            "Champions",
+            "Loyal Customers",
+            "Potential Loyalist",
+            "Recent Customers",
+            "Promising",
+            "Customers Needing Attention",
+            "About to Sleep",
+            "At Risk",
+            "Cant Lose Them",
+            "Hibernating",
+            "Lost"
+            ]
+        /*generating mock RFM data until backend is done*/
+        _.map(this.state.participantList, participant => {
+            participant["rfm_score"] = _.random(111, 555);
+            participant["rfm_label"] = LABELS[_.random(0, _.size(LABELS))];
+            participant["rfm_color"] = COLORS[_.random(0, _.size(COLORS))];
+        });
+
+        let participantListFormatted = _.map(this.state.participantList, this.namesToLowerCase);
+        let participantListGrouped = _.groupBy(participantListFormatted, "matching_id");
         participantListGrouped = _.orderBy(participantListGrouped, ['0.lower_last_name', '0.lower_first_name']);
+        debugger;
 
         return (
             <Grid container direction={"column"} justify={"center"}>
