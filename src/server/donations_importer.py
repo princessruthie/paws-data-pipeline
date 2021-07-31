@@ -18,7 +18,7 @@ MINIMUM_SIMILARITY = 0.85  # How good does the table match need to be?
 expected_columns =  {'Recurring donor' : 'recurring_donor',        # 'Export XLSX file column name' : 'db column name' 
                     'Opportunity Owner': None ,                    # None means we won't import that column into DB
                     'Account ID 18': None ,
-                    'Account Name':  None, 
+                    'Account Name':  'account_name', 
                     'Primary Contact': 'primary_contact',
                     'Contact ID 18': 'contact_id',
                     'Opportunity ID 18': 'opp_id',   # Should be a unique donation ID but isn't quite

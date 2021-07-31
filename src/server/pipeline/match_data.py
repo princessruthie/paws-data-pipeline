@@ -17,7 +17,8 @@ def normalize_before_match(value):
 
 def delete_from_db(connection, id_list):
     for id in id_list:
-        sql = text("delete from pdp_contacts where matching_id = :id and archived_date is not null")
+        current_app.logger.warn("deleting id {} from DB".format(id))
+        sql = text("delete from pdp_contacts where matching_id = :id and archived_date is null")
         connection.execute(sql, id=id)
 
 
@@ -33,8 +34,10 @@ def start(connection, added_or_updated_rows, manual_matches_df, job_id):
 
     current_app.logger.info("***** Running execute job ID " + job_id + " *****")
     items_to_update = pd.concat([added_or_updated_rows["new"], added_or_updated_rows["updated"]], ignore_index=True)
+    if items_to_update.duplicated(["source_id", "source_type"]).any():
+        current_app.logger.warn("Duplicates detected")
     
-    pdp_contacts = pd.read_sql_table('pdp_contacts', connection)
+    pdp_contacts = pd.read_sql_query('select * from pdp_contacts where archived_date is null', connection)
 
     if pdp_contacts["matching_id"].dropna().size == 0:
         max_matching_group = 0
